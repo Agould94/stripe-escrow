@@ -2,6 +2,25 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+
+router.get('/get-escrows', async (req, res) => {
+    try {
+        // Mock data for now (replace with DB call)
+        const escrows = [
+            {
+                id: "1",
+                amount: 500,
+                status: "Pending",
+                paymentIntentId: "pi_123456",
+                autoReleaseTime: new Date().getTime() + 1000 * 60 * 60 * 24 * 7, // 7 days from now
+            }
+        ];
+        res.json(escrows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Create an escrow session
 router.post('/create-escrow-session', async (req, res) => {
     try {
