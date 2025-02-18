@@ -35,3 +35,19 @@ button {
 button:hover {
     background: #5145cd;
 }
+
+
+.payment-button {
+    background: #635bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-right: 10px;
+}
+
+.payment-button:hover {
+    background: #5145cd;
+}
