@@ -83,6 +83,17 @@ router.post('/release-funds', async (req, res) => {
     }
 });
 
+router.post('/rescind-funds', async (req, res) => {
+    try {
+        const { paymentIntentId } = req.body;
+
+        // Simulate waiting for freelancer's approval
+        res.json({ message: "Rescind request sent to freelancer for approval." });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Auto-release funds after timeout
 const autoReleaseFunds = async (paymentIntentId) => {
     setTimeout(async () => {
