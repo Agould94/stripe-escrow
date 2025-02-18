@@ -54,6 +54,23 @@ router.post('/create-escrow-session', async (req, res) => {
     }
 });
 
+router.post('/partial-release', async (req, res) => {
+    try {
+        const { paymentIntentId, amount } = req.body;
+
+        const paymentIntent = await stripe.transfers.create({
+            amount: amount * 100, // Convert to cents
+            currency: "usd",
+            destination: "acct_1Kxyz1234", // Replace with freelancer's ID
+        });
+
+        res.json({ message: 'Partial funds released!', paymentIntent });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // Release funds from escrow
 router.post('/release-funds', async (req, res) => {
     try {
