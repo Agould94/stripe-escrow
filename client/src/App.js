@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
+import EscrowDashboard from './components/EscrowDashboard';
+import './styles/global.css'
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
@@ -31,7 +33,8 @@ function CheckoutForm() {
 export default function App() {
     return (
         <Elements stripe={stripePromise}>
-            <CheckoutForm />
+               <h1>Stripe Escrow Platform</h1>
+               <EscrowDashboard />
         </Elements>
     );
 }
