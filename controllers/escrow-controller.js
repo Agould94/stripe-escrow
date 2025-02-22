@@ -28,19 +28,45 @@ router.post('/create-escrow-session', async (req, res) => {
     try {
         const { amount, clientEmail, freelancerEmail } = req.body;
 
-        // Find freelancer in the database
+        // Load users from JSON
         const users = require('../db/users.json');
-        const freelancer = users.find(u => u.email === freelancerEmail);
+
+        // Find the client
+        const client = users.clients.find(u => u.email === clientEmail);
+        if (!client || !client.stripeCustomerId) {
+            return res.status(400).json({ error: "Client not found or not connected to Stripe" });
+        }
+
+        // Find the freelancer
+        const freelancer = users.freelancers.find(u => u.email === freelancerEmail);
         if (!freelancer || !freelancer.stripeAccountId) {
             return res.status(400).json({ error: "Freelancer not found or not connected to Stripe" });
         }
 
-        // Create a PaymentIntent (escrow funds)
+        // Get the client's default payment method
+        const paymentMethods = await stripe.paymentMethods.list({
+            customer: client.stripeCustomerId,
+            type: 'card',
+        });
+
+        if (paymentMethods.data.length === 0) {
+            return res.status(400).json({ error: "Client does not have a valid payment method" });
+        }
+
+        const paymentMethodId = paymentMethods.data[0].id; // Use the first available payment method
+
+        // Create a PaymentIntent with the client as the payer
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: amount * 100,
+            amount: amount * 100, // Convert dollars to cents
             currency: 'usd',
-            payment_method_types: ['card'],
-            capture_method: 'manual',  // HOLD funds until manually released
+            payment_method: paymentMethodId,
+            capture_method: 'manual', // HOLD funds instead of charging immediately
+            confirm: true, // Automatically confirm the payment intent
+            customer: client.stripeCustomerId,
+            automatic_payment_methods: {
+                enabled: true,
+                allow_redirects: 'never' // Ensures only card payments are used
+            },
             metadata: {
                 freelancerEmail,
                 clientEmail,
@@ -66,6 +92,8 @@ router.post('/create-escrow-session', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
 
 
 router.post('/partial-release', async (req, res) => {
@@ -110,34 +138,32 @@ router.post('/release-funds', async (req, res) => {
 
         // Retrieve the PaymentIntent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
         if (!paymentIntent) {
             return res.status(404).json({ error: "PaymentIntent not found in Stripe" });
         }
 
-        // Check the current status of the PaymentIntent
         if (paymentIntent.status !== "requires_capture") {
             return res.status(400).json({ 
-                error: `This PaymentIntent cannot be captured because it has a status of ${paymentIntent.status}.` 
+                error: `This PaymentIntent cannot be captured because it has a status of ${paymentIntent.status}.`
             });
         }
 
-        // Capture the PaymentIntent
-        const capturedPaymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+        // Capture the PaymentIntent (release the funds)
+        await stripe.paymentIntents.capture(paymentIntentId);
 
         // Retrieve escrow entry
         let escrows = getEscrows();
         let escrow = escrows.find(e => e.id === paymentIntentId);
         if (!escrow) return res.status(404).json({ error: "Escrow not found" });
 
-        // Find freelancer
+        // Find Freelancer
         const users = require('../db/users.json');
-        const freelancer = users.find(u => u.email === escrow.freelancerEmail);
+        const freelancer = users.freelancers.find(u => u.email === escrow.freelancerEmail);
         if (!freelancer || !freelancer.stripeAccountId) {
             return res.status(400).json({ error: "Freelancer not found or not connected to Stripe" });
         }
 
-        // Send funds to freelancer
+        // Transfer funds to the Freelancer
         const transfer = await stripe.transfers.create({
             amount: escrow.amount * 100,
             currency: "usd",
@@ -154,6 +180,7 @@ router.post('/release-funds', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 router.post('/rescind-funds', async (req, res) => {
     try {

@@ -1,4 +1,9 @@
-[
-    { "id": "1", "name": "test testaccount", "email": "test@example.com", "stripeAccountId": "acct_1QtNx7Qo3JbWSVEi" },
-    { "id": "2", "name": "Test 2 Testaccount 2", "email": "test@test.com", "stripeAccountId": "acct_1QtNwqQoYl6x8zcm" }
-]
+{
+    "clients": [
+        { "id": "1", "name": "Test Customer", "email": "customer@test.com", "stripeCustomerId": "cus_Rp3SaWahYfs7aY" }
+    ],
+    "freelancers": [
+        { "id": "1", "name": "Test Freelancer 1", "email": "test@example.com", "stripeAccountId": "acct_1QtNx7Qo3JbWSVEi" },
+        { "id": "2", "name": "Test Freelancer 2", "email": "test@test.com", "stripeAccountId": "acct_1QtNwqQoYl6x8zcm" }
+    ]
+}
