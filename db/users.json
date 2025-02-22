@@ -1,4 +1,4 @@
 [
-    { "id": "1", "name": "test testaccount", "email": "test@test.com", "stripeAccountId": "acct_1QtNx7Qo3JbWSVEi" },
+    { "id": "1", "name": "test testaccount", "email": "test@example.com", "stripeAccountId": "acct_1QtNx7Qo3JbWSVEi" },
     { "id": "2", "name": "Test 2 Testaccount 2", "email": "test@test.com", "stripeAccountId": "acct_1QtNwqQoYl6x8zcm" }
 ]

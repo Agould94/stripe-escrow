@@ -8,6 +8,10 @@ const EscrowDashboard = () => {
     const [user, setUser] = useState('client'); // Toggle user type
     const [loading, setLoading] = useState(true);
 
+    const [amount, setAmount] = useState('');
+    const [clientEmail, setClientEmail] = useState('');
+    const [freelancerEmail, setFreelancerEmail] = useState('');
+
     useEffect(() => {
         fetch('http://localhost:5001/escrow/get-escrows')
             .then((res) => res.json())
@@ -52,13 +56,31 @@ const EscrowDashboard = () => {
     };
 
     const handleCreateEscrow = async () => {
+        if (!amount || !clientEmail || !freelancerEmail) {
+            alert("Please fill in all fields before creating an escrow.");
+            return;
+        }
+
         const response = await fetch('http://localhost:5001/escrow/create-escrow-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: 100, clientEmail: "test@example.com", freelancerEmail: "test@test.com" }),
+            body: JSON.stringify({ amount, clientEmail, freelancerEmail }),
         });
+
         const result = await response.json();
-        alert(result.message);
+        if (result.error) {
+            alert(`Error: ${result.error}`);
+        } else {
+            alert(`Escrow session created! Payment Intent ID: ${result.paymentIntentId}`);
+            setEscrows([...escrows, { 
+                id: result.paymentIntentId, 
+                amount, 
+                clientEmail, 
+                freelancerEmail, 
+                status: "Pending", 
+                autoReleaseTime: Date.now() + 7 * 24 * 60 * 60 * 1000 
+            }]);
+        }
     };
 
     return (
@@ -66,26 +88,51 @@ const EscrowDashboard = () => {
             <h2>Escrow Dashboard</h2>
             <UserSwitcher user={user} setUser={setUser} />
 
+            {/* Escrow Creation Form */}
+            {user === 'client' && (
+                <div className="escrow-form">
+                    <h3>Initiate a New Escrow</h3>
+                    <input 
+                        type="number" 
+                        placeholder="Amount (USD)" 
+                        value={amount} 
+                        onChange={(e) => setAmount(e.target.value)} 
+                    />
+                    <input 
+                        type="email" 
+                        placeholder="Client Email" 
+                        value={clientEmail} 
+                        onChange={(e) => setClientEmail(e.target.value)} 
+                    />
+                    <input 
+                        type="email" 
+                        placeholder="Freelancer Email" 
+                        value={freelancerEmail} 
+                        onChange={(e) => setFreelancerEmail(e.target.value)} 
+                    />
+                    <button onClick={handleCreateEscrow}>Create Escrow</button>
+                </div>
+            )}
+
             {loading ? (
                 <p>Loading escrows...</p>
             ) : escrows.length === 0 ? (
-                <div>
-                    <p>No escrows found.</p>
-                    {user === 'client' && <button onClick={handleCreateEscrow}>Initiate New Escrow</button>}
-                </div>
+                <p>No escrows found.</p>
             ) : (
                 <div className="escrow-list">
                     {escrows.map((escrow) => (
                         <div key={escrow.id} className="escrow-item">
                             <p><strong>Amount:</strong> ${escrow.amount}</p>
+                            <p><strong>Client:</strong> {escrow.clientEmail}</p>
+                            <p><strong>Freelancer:</strong> {escrow.freelancerEmail}</p>
                             <p><strong>Status:</strong> {escrow.status}</p>
                             <CountdownTimer endTime={escrow.autoReleaseTime} />
-                            
+
                             {user === 'client' && (
                                 <>
-                                    <PaymentButton label="Release Funds" onClick={() => handleReleaseFunds(escrow.paymentIntentId)} />
-                                    <PaymentButton label="Partial Release" onClick={() => handlePartialRelease(escrow.paymentIntentId, escrow.amount / 2)} />
-                                    <PaymentButton label="Rescind Funds" onClick={() => handleRescindFunds(escrow.paymentIntentId)} />
+                                    <PaymentButton label="Release Funds" onClick={() => handleReleaseFunds(escrow.id)} />
+                                    <PaymentButton label="Partial Release" onClick={() => handlePartialRelease(escrow.id, escrow.amount / 2)} />
+                                    <PaymentButton label="Rescind Funds" onClick={() => handleRescindFunds(escrow.id)} />
                                 </>
                             )}
                         </div>

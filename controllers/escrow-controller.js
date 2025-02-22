@@ -104,10 +104,28 @@ router.post('/release-funds', async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
 
-        // Capture the previously held payment
-        const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+        if (!paymentIntentId) {
+            return res.status(400).json({ error: "Payment Intent ID is required" });
+        }
 
-        // Retrieve the escrow entry
+        // Retrieve the PaymentIntent from Stripe
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        if (!paymentIntent) {
+            return res.status(404).json({ error: "PaymentIntent not found in Stripe" });
+        }
+
+        // Check the current status of the PaymentIntent
+        if (paymentIntent.status !== "requires_capture") {
+            return res.status(400).json({ 
+                error: `This PaymentIntent cannot be captured because it has a status of ${paymentIntent.status}.` 
+            });
+        }
+
+        // Capture the PaymentIntent
+        const capturedPaymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+
+        // Retrieve escrow entry
         let escrows = getEscrows();
         let escrow = escrows.find(e => e.id === paymentIntentId);
         if (!escrow) return res.status(404).json({ error: "Escrow not found" });
@@ -132,11 +150,10 @@ router.post('/release-funds', async (req, res) => {
 
         res.json({ message: 'Funds released!', transfer });
     } catch (error) {
+        console.error("Release funds error:", error);
         res.status(500).json({ error: error.message });
     }
 });
-
-
 
 router.post('/rescind-funds', async (req, res) => {
     try {
