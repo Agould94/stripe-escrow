@@ -11,7 +11,14 @@ const EscrowDashboard = () => {
     useEffect(() => {
         fetch('http://localhost:5001/escrow/get-escrows')
             .then((res) => res.json())
-            .then((data) => setEscrows(data));
+            .then((data) => {
+                setEscrows(data);
+                setLoading(false);
+            })
+            .catch((error) => {
+                console.error("Error fetching escrows:", error);
+                setLoading(false);
+            });
     }, []);
 
     const handleReleaseFunds = async (paymentIntentId) => {
@@ -48,7 +55,7 @@ const EscrowDashboard = () => {
         const response = await fetch('http://localhost:5001/escrow/create-escrow-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: 100, clientEmail: "test@example.com", freelancerEmail: "freelancer@example.com" }),
+            body: JSON.stringify({ amount: 100, clientEmail: "test@example.com", freelancerEmail: "test@test.com" }),
         });
         const result = await response.json();
         alert(result.message);
